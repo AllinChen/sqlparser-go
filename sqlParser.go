@@ -9,7 +9,6 @@ import (
 
 type visitor struct {
 	toParse          bool
-	tName            string
 	visitSqlList     []string
 	funcList         []string
 	tableList        []string
@@ -19,7 +18,6 @@ type visitor struct {
 
 func (v *visitor) Init() {
 	v.toParse = false
-	v.tName = ""
 	v.visitSqlList = []string{
 		"*ast.CreateTableStmt",
 		"*ast.AlterTableStmt",
@@ -85,37 +83,37 @@ func (v *visitor) Enter(in ast.Node) (out ast.Node, skipChildren bool) {
 
 		if astType == "*ast.TableName" {
 			tableName := in.(*ast.TableName).Name.L
-			v.tName = tableName
 			v.AddTable(tableName)
 		}
 
 		if astType == "*ast.SelectField" {
 			expr := in.(*ast.SelectField).Expr
 			if expr == nil && in.(*ast.SelectField).WildCard != nil {
-				columnName = v.tName + ".*"
+				columnName = "*"
 				v.AddColumn(columnName)
 			} else if expr != nil {
 				exprType = reflect.TypeOf(expr).String()
-			}
 
-			if StringInSlice(exprType, v.funcList) {
-				if exprType == "*ast.AggregateFuncExpr" {
-					funcArgs = expr.(*ast.AggregateFuncExpr).Args
-				} else if exprType == "*ast.FuncCallExpr" {
-					funcArgs = expr.(*ast.FuncCallExpr).Args
-				} else if exprType == "*ast.WindowFuncExpr" {
-					funcArgs = expr.(*ast.WindowFuncExpr).Args
-				}
-
-				for _, arg := range funcArgs {
-					if reflect.TypeOf(arg).String() == "*ast.ColumnNameExpr" {
-						columnName = arg.(*ast.ColumnNameExpr).Name.Name.L
-						v.AddColumn(columnName)
+				if StringInSlice(exprType, v.funcList) {
+					funcArgs = []ast.ExprNode{}
+					if exprType == "*ast.AggregateFuncExpr" {
+						funcArgs = expr.(*ast.AggregateFuncExpr).Args
+					} else if exprType == "*ast.FuncCallExpr" {
+						funcArgs = expr.(*ast.FuncCallExpr).Args
+					} else if exprType == "*ast.WindowFuncExpr" {
+						funcArgs = expr.(*ast.WindowFuncExpr).Args
 					}
+
+					for _, arg := range funcArgs {
+						if reflect.TypeOf(arg).String() == "*ast.ColumnNameExpr" {
+							columnName = arg.(*ast.ColumnNameExpr).Name.Name.L
+							v.AddColumn(columnName)
+						}
+					}
+				} else if exprType == "*ast.ColumnNameExpr" {
+					columnName = expr.(*ast.ColumnNameExpr).Name.Name.L
+					v.AddColumn(columnName)
 				}
-			} else if exprType == "*ast.ColumnNameExpr" {
-				columnName = expr.(*ast.ColumnNameExpr).Name.Name.L
-				v.AddColumn(columnName)
 			}
 		}
 	}
