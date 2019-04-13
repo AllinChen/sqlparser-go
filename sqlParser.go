@@ -12,6 +12,7 @@ type visitor struct {
 	visitSqlList     []string
 	funcList         []string
 	tableList        []string
+	tableCommentMap  map[string]string
 	columnList       []string
 	columnCommentMap map[string]string
 }
@@ -36,6 +37,7 @@ func (v *visitor) Init() {
 		"*ast.WindowFuncExpr",
 	}
 	v.tableList = []string{}
+	v.tableCommentMap = make(map[string]string)
 	v.columnList = []string{}
 	v.columnCommentMap = make(map[string]string)
 }
@@ -46,21 +48,27 @@ func (v *visitor) AddTable(tableName string) {
 	}
 }
 
+func (v *visitor) AddTableComment(tableName string, tableComment string) {
+	v.tableCommentMap[tableName] = tableComment
+}
+
 func (v *visitor) AddColumn(columnName string) {
 	if !StringInSlice(columnName, v.columnList) {
 		v.columnList = append(v.columnList, columnName)
 	}
 }
 
-func (v *visitor) AddComment(columnName string, columnComment string) {
+func (v *visitor) AddColumnComment(columnName string, columnComment string) {
 	v.columnCommentMap[columnName] = columnComment
 }
 
 func (v *visitor) Enter(in ast.Node) (out ast.Node, skipChildren bool) {
 	var columnName string
-	exprType := ""
 	var funcArgs []ast.ExprNode
 
+	exprType := ""
+	tableComment := ""
+	columnComment := ""
 	astType := reflect.TypeOf(in).String()
 
 	if StringInSlice(astType, v.visitSqlList) {
@@ -68,24 +76,25 @@ func (v *visitor) Enter(in ast.Node) (out ast.Node, skipChildren bool) {
 	}
 
 	if v.toParse {
-		if astType == "*ast.ColumnDef" {
-			columnName := in.(*ast.ColumnDef).Name.Name.L
-			v.columnList = append(v.columnList, columnName)
-			v.columnCommentMap[columnName] = ""
-
-			for _, columnOption := range in.(*ast.ColumnDef).Options {
-				if columnOption.Tp == ast.ColumnOptionComment {
-					columnComment := columnOption.Expr.(*driver.ValueExpr).Datum.GetString()
-					v.AddComment(columnName, columnComment)
-				}
-			}
-		}
-
+		//fmt.Println(astType)
+		// 获取表名称
 		if astType == "*ast.TableName" {
 			tableName := in.(*ast.TableName).Name.L
 			v.AddTable(tableName)
 		}
 
+		// 获取表注释
+		if astType == "*ast.CreateTableStmt" {
+			tableName := in.(*ast.CreateTableStmt).Table.Name.L
+			for _, tableOption := range in.(*ast.CreateTableStmt).Options {
+				if tableOption.Tp == ast.TableOptionComment {
+					tableComment = tableOption.StrValue
+				}
+				v.AddTableComment(tableName, tableComment)
+			}
+		}
+
+		// 获取字段名称
 		if astType == "*ast.SelectField" {
 			expr := in.(*ast.SelectField).Expr
 			if expr == nil && in.(*ast.SelectField).WildCard != nil {
@@ -114,6 +123,20 @@ func (v *visitor) Enter(in ast.Node) (out ast.Node, skipChildren bool) {
 					columnName = expr.(*ast.ColumnNameExpr).Name.Name.L
 					v.AddColumn(columnName)
 				}
+			}
+		}
+
+		// 获取字段注释
+		if astType == "*ast.ColumnDef" {
+			columnName := in.(*ast.ColumnDef).Name.Name.L
+			v.columnList = append(v.columnList, columnName)
+			v.columnCommentMap[columnName] = ""
+
+			for _, columnOption := range in.(*ast.ColumnDef).Options {
+				if columnOption.Tp == ast.ColumnOptionComment {
+					columnComment = columnOption.Expr.(*driver.ValueExpr).Datum.GetString()
+				}
+				v.AddColumnComment(columnName, columnComment)
 			}
 		}
 	}
