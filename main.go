@@ -37,6 +37,7 @@ func main() {
 	//sql = "CREATE TABLE `yh_cash_gift` (`id` bigint(20) NOT NULL COMMENT 'id，非自增');"
 	//sql = `alter table posdm_order_item_promotion change column  p_promo_amt p_promo_amt_new decimal(19,2) DEFAULT '0.00' comment 'ddd';`
 	if v, warns, err := parser.ParseSql(sql); warns == nil && err == nil {
+		result["sqlType"] = v.sqlType
 		result["dbNames"] = v.dbList
 		result["tableNames"] = v.tableList
 		result["tableComments"] = v.tableCommentMap
