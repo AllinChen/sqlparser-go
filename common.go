@@ -9,3 +9,11 @@ func StringInSlice(str string, slice []string) bool {
 
 	return false
 }
+
+func StringInMap(str string, m map[string]string) bool {
+	if _, ok := m[str]; ok {
+		return true
+	}
+
+	return false
+}

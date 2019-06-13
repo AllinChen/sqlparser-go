@@ -16,7 +16,7 @@ type MyFlag struct{}
 
 func usage() {
 	fmt.Fprintf(
-		os.Stderr, "sqlparser can parse input sql and print json formatted tableNames/tableCommments/columnNames/columnComments.\n"+
+		os.Stderr, "sqlparser can parse input sql and print json formatted dbNames/tableNames/tableCommments/columnNames/columnComments.\n"+
 			"Please notice that ONLY these statements will be parsed:\n"+
 			"\tcreate table\n"+
 			"\talter table\n"+

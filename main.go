@@ -31,10 +31,13 @@ func main() {
 	//sql = `select t.col1 from (select name as name_new from t01 as t_001) t inner join t02 on t.mobile=t02.phone and t.date=t02.datetime order by date limit 0,10;`
 	//sql = `select count(name) from t_sms_message where create_time>'2019-02-01 00:00:00' and create_time<'2019-03-01 00:00:00' and sms_type='1' and char_length(message) > 67;`
 	//sql = `SELECT t.name, t.* FROM yh_after_sales_order_header t where refund_status="refunding" ;select id from t01;`
-	//sql = `select t02.*, id id_1 from t01 inner join t02 on t01.id=t02.id;`
+	//sql = `select t02.*, id id_1 from db01.t01 inner join db02.t02 on t01.id=t02.id;`
 	//sql = `alter table t01 change column col1 col2 int(10) comment 'ddd';`
-
+	//sql = `alter table t01 comment 'ddd';`
+	//sql = "CREATE TABLE `yh_cash_gift` (`id` bigint(20) NOT NULL COMMENT 'id，非自增');"
+	//sql = `alter table posdm_order_item_promotion change column  p_promo_amt p_promo_amt_new decimal(19,2) DEFAULT '0.00' comment 'ddd';`
 	if v, warns, err := parser.ParseSql(sql); warns == nil && err == nil {
+		result["dbNames"] = v.dbList
 		result["tableNames"] = v.tableList
 		result["tableComments"] = v.tableCommentMap
 		result["columnNames"] = v.columnList
