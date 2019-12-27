@@ -1,4 +1,4 @@
-package main
+package common
 
 func StringInSlice(str string, slice []string) bool {
 	for i := range slice {

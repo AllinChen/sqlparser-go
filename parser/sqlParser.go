@@ -1,23 +1,24 @@
-package main
+package parser
 
 import (
 	"github.com/pingcap/parser"
 	"github.com/pingcap/parser/ast"
 	"github.com/pingcap/tidb/types/parser_driver"
 	"reflect"
+	"sqlparser-go/lib/common"
 	"strings"
 )
 
 type visitor struct {
-	sqlType          string
+	SqlType          string
 	toParse          bool
 	visitSqlList     []string
 	funcList         []string
-	dbList           []string
-	tableList        []string
-	tableCommentMap  map[string]string
-	columnList       []string
-	columnCommentMap map[string]string
+	DbList           []string
+	TableList        []string
+	TableCommentMap  map[string]string
+	ColumnList       []string
+	ColumnCommentMap map[string]string
 }
 
 func (v *visitor) Init() {
@@ -39,38 +40,38 @@ func (v *visitor) Init() {
 		"*ast.AggregateFuncExpr",
 		"*ast.WindowFuncExpr",
 	}
-	v.sqlType = ""
-	v.dbList = []string{}
-	v.tableList = []string{}
-	v.tableCommentMap = make(map[string]string)
-	v.columnList = []string{}
-	v.columnCommentMap = make(map[string]string)
+	v.SqlType = ""
+	v.DbList = []string{}
+	v.TableList = []string{}
+	v.TableCommentMap = make(map[string]string)
+	v.ColumnList = []string{}
+	v.ColumnCommentMap = make(map[string]string)
 }
 
 func (v *visitor) AddDb(dbName string) {
-	if !StringInSlice(dbName, v.dbList) {
-		v.dbList = append(v.dbList, dbName)
+	if !common.StringInSlice(dbName, v.DbList) {
+		v.DbList = append(v.DbList, dbName)
 	}
 }
 
 func (v *visitor) AddTable(tableName string) {
-	if !StringInSlice(tableName, v.tableList) {
-		v.tableList = append(v.tableList, tableName)
+	if !common.StringInSlice(tableName, v.TableList) {
+		v.TableList = append(v.TableList, tableName)
 	}
 }
 
 func (v *visitor) AddTableComment(tableName string, tableComment string) {
-	v.tableCommentMap[tableName] = tableComment
+	v.TableCommentMap[tableName] = tableComment
 }
 
 func (v *visitor) AddColumn(columnName string) {
-	if !StringInSlice(columnName, v.columnList) {
-		v.columnList = append(v.columnList, columnName)
+	if !common.StringInSlice(columnName, v.ColumnList) {
+		v.ColumnList = append(v.ColumnList, columnName)
 	}
 }
 
 func (v *visitor) AddColumnComment(columnName string, columnComment string) {
-	v.columnCommentMap[columnName] = columnComment
+	v.ColumnCommentMap[columnName] = columnComment
 }
 
 func (v *visitor) Enter(in ast.Node) (out ast.Node, skipChildren bool) {
@@ -79,87 +80,79 @@ func (v *visitor) Enter(in ast.Node) (out ast.Node, skipChildren bool) {
 	dbName := ""
 	tableName := ""
 	columnName := ""
-	exprType := ""
 	tableComment := ""
 	columnComment := ""
 	astType := reflect.TypeOf(in).String()
 
-	if StringInSlice(astType, v.visitSqlList) {
+	if common.StringInSlice(astType, v.visitSqlList) {
 		v.toParse = true
 		// 获取语句类型
-		v.sqlType = strings.Split(astType, ".")[1]
+		v.SqlType = strings.Split(astType, ".")[1]
 	}
 
 	if v.toParse {
 		//fmt.Println(astType)
 
-		// 获取表名称
-		if astType == "*ast.TableName" {
+		switch in.(type) {
+		case *ast.TableName:
+			// 获取表名称
 			tableName = in.(*ast.TableName).Name.L
 			v.AddTable(tableName)
 			dbName = in.(*ast.TableName).Schema.L
 			if dbName != "" {
 				v.AddDb(dbName)
 			}
-		}
-
-		// 获取表注释
-		if astType == "*ast.CreateTableStmt" {
+		case *ast.CreateTableStmt:
+			// 获取表注释
 			tableName = in.(*ast.CreateTableStmt).Table.Name.L
 			for _, tableOption := range in.(*ast.CreateTableStmt).Options {
 				if tableOption.Tp == ast.TableOptionComment {
 					tableComment = tableOption.StrValue
+					v.AddTableComment(tableName, tableComment)
+					break
 				}
 			}
-
-			v.AddTableComment(tableName, tableComment)
-		} else if astType == "*ast.AlterTableStmt" {
+		case *ast.AlterTableStmt:
+			// 获取表注释
 			tableName = in.(*ast.AlterTableStmt).Table.Name.L
 			for _, tableSpec := range in.(*ast.AlterTableStmt).Specs {
 				for _, tableOption := range tableSpec.Options {
 					if tableOption.Tp == ast.TableOptionComment {
 						tableComment = tableOption.StrValue
+						v.AddTableComment(tableName, tableComment)
+						break
 					}
 				}
 			}
-
-			v.AddTableComment(tableName, tableComment)
-		}
-
-		// 获取字段名称
-		if astType == "*ast.SelectField" {
+		case *ast.SelectField:
+			// 获取字段名称
 			expr := in.(*ast.SelectField).Expr
 			if expr == nil && in.(*ast.SelectField).WildCard != nil {
 				columnName = "*"
 				v.AddColumn(columnName)
 			} else if expr != nil {
-				exprType = reflect.TypeOf(expr).String()
-
-				if StringInSlice(exprType, v.funcList) {
-					funcArgs = []ast.ExprNode{}
-					if exprType == "*ast.AggregateFuncExpr" {
-						funcArgs = expr.(*ast.AggregateFuncExpr).Args
-					} else if exprType == "*ast.FuncCallExpr" {
-						funcArgs = expr.(*ast.FuncCallExpr).Args
-					} else if exprType == "*ast.WindowFuncExpr" {
-						funcArgs = expr.(*ast.WindowFuncExpr).Args
-					}
-
-					for _, arg := range funcArgs {
-						if reflect.TypeOf(arg).String() == "*ast.ColumnNameExpr" {
-							columnName = arg.(*ast.ColumnNameExpr).Name.Name.L
-							v.AddColumn(columnName)
-						}
-					}
-				} else if exprType == "*ast.ColumnNameExpr" {
+				switch expr.(type) {
+				case *ast.AggregateFuncExpr:
+					funcArgs = expr.(*ast.AggregateFuncExpr).Args
+				case *ast.FuncCallExpr:
+					funcArgs = expr.(*ast.FuncCallExpr).Args
+				case *ast.WindowFuncExpr:
+					funcArgs = expr.(*ast.WindowFuncExpr).Args
+				case *ast.ColumnNameExpr:
 					columnName = expr.(*ast.ColumnNameExpr).Name.Name.L
 					v.AddColumn(columnName)
 				}
-			}
-		}
 
-		// 获取字段注释
-		if astType == "*ast.ColumnDef" {
+				for _, arg := range funcArgs {
+					switch arg.(type) {
+					case *ast.ColumnNameExpr:
+						columnName = arg.(*ast.ColumnNameExpr).Name.Name.L
+						v.AddColumn(columnName)
+					}
+				}
+			}
+		case *ast.ColumnDef:
+			// 获取字段注释
 			columnName := in.(*ast.ColumnDef).Name.Name.L
 			v.AddColumn(columnName)
 
@@ -170,6 +163,9 @@ func (v *visitor) Enter(in ast.Node) (out ast.Node, skipChildren bool) {
 			}
 
 			v.AddColumnComment(columnName, columnComment)
+		case *ast.ColumnName:
+			columnName := in.(*ast.ColumnName).Name.L
+			v.AddColumn(columnName)
 		}
 	}
 

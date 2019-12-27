@@ -5,12 +5,14 @@ import (
 	"fmt"
 	_ "github.com/pingcap/tidb/types/parser_driver"
 	"os"
+	"sqlparser-go/lib/common"
+	parser2 "sqlparser-go/parser"
 )
 
 func main() {
-	f := MyFlag{}
+	f := common.MyFlag{}
 	f.Init()
-	parser := SqlParser{}
+	parser := parser2.SqlParser{}
 	result := make(map[string]interface{})
 
 	//sql = `CREATE TABLE ` + "`t_order_optimize_result`" + `(
@@ -36,13 +38,15 @@ func main() {
 	//sql = `alter table t01 comment 'ddd';`
 	//sql = "CREATE TABLE `yh_cash_gift` (`id` bigint(20) NOT NULL COMMENT 'id，非自增');"
 	//sql = `alter table posdm_order_item_promotion change column  p_promo_amt p_promo_amt_new decimal(19,2) DEFAULT '0.00' comment 'ddd';`
-	if v, warns, err := parser.ParseSql(sql); warns == nil && err == nil {
-		result["sqlType"] = v.sqlType
-		result["dbNames"] = v.dbList
-		result["tableNames"] = v.tableList
-		result["tableComments"] = v.tableCommentMap
-		result["columnNames"] = v.columnList
-		result["columnComments"] = v.columnCommentMap
+	//sql = `insert into t01(col1, col2, col3) values(1, 1, 1, 1);`
+	//sql = `select * from t01`
+	if v, warns, err := parser.ParseSql(f.Sql); warns == nil && err == nil {
+		result["sqlType"] = v.SqlType
+		result["dbNames"] = v.DbList
+		result["tableNames"] = v.TableList
+		result["tableComments"] = v.TableCommentMap
+		result["columnNames"] = v.ColumnList
+		result["columnComments"] = v.ColumnCommentMap
 
 		if result, err := json.Marshal(result); err == nil {
 			fmt.Println(string(result))
@@ -50,7 +54,6 @@ func main() {
 			fmt.Printf("marshal error: \n%v\n", err)
 			os.Exit(1)
 		}
-
 	} else {
 		fmt.Printf("parse warn: %v\nparse error: %v\n", warns, err)
 		os.Exit(1)

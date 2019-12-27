@@ -1,4 +1,4 @@
-package main
+package common
 
 import (
 	"flag"
@@ -6,13 +6,11 @@ import (
 	"os"
 )
 
-var (
-	help    bool
-	version bool
-	sql     string
-)
-
-type MyFlag struct{}
+type MyFlag struct {
+	Help    bool
+	Version bool
+	Sql     string
+}
 
 func usage() {
 	fmt.Fprintf(
@@ -33,19 +31,19 @@ func usage() {
 }
 
 func (f *MyFlag) Init() {
-	flag.BoolVar(&help, "help", false, "show help and exit")
-	flag.BoolVar(&version, "version", false, "show version and exit")
-	flag.StringVar(&sql, "sql", "", "input sql text")
+	flag.BoolVar(&f.Help, "help", false, "show help and exit")
+	flag.BoolVar(&f.Version, "version", false, "show version and exit")
+	flag.StringVar(&f.Sql, "sql", "", "input sql text")
 	flag.Parse()
 
 	flag.Usage = usage
 
-	if help {
+	if f.Help {
 		flag.Usage()
 		os.Exit(0)
 	}
 
-	if version {
+	if f.Version {
 		fmt.Println("sqlparser version: v1.0.0")
 		os.Exit(0)
 	}
