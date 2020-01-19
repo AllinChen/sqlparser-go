@@ -98,6 +98,7 @@ func (v *visitor) Enter(in ast.Node) (out ast.Node, skipChildren bool) {
 			// 获取表名称
 			tableName = in.(*ast.TableName).Name.L
 			v.AddTable(tableName)
+			// 获取数据库名称
 			dbName = in.(*ast.TableName).Schema.L
 			if dbName != "" {
 				v.AddDb(dbName)
@@ -105,6 +106,7 @@ func (v *visitor) Enter(in ast.Node) (out ast.Node, skipChildren bool) {
 		case *ast.CreateTableStmt:
 			// 获取表注释
 			tableName = in.(*ast.CreateTableStmt).Table.Name.L
+
 			for _, tableOption := range in.(*ast.CreateTableStmt).Options {
 				if tableOption.Tp == ast.TableOptionComment {
 					tableComment = tableOption.StrValue
@@ -115,6 +117,7 @@ func (v *visitor) Enter(in ast.Node) (out ast.Node, skipChildren bool) {
 		case *ast.AlterTableStmt:
 			// 获取表注释
 			tableName = in.(*ast.AlterTableStmt).Table.Name.L
+
 			for _, tableSpec := range in.(*ast.AlterTableStmt).Specs {
 				for _, tableOption := range tableSpec.Options {
 					if tableOption.Tp == ast.TableOptionComment {
