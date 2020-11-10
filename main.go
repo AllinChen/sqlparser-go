@@ -3,10 +3,12 @@ package main
 import (
 	"encoding/json"
 	"fmt"
-	_ "github.com/pingcap/tidb/types/parser_driver"
 	"os"
-	"sqlparser-go/lib/common"
-	parser2 "sqlparser-go/parser"
+
+	_ "github.com/pingcap/tidb/types/parser_driver"
+
+	"github.com/romberli/sqlparser-go/lib/common"
+	parser2 "github.com/romberli/sqlparser-go/parser"
 )
 
 func main() {

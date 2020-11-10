@@ -1,12 +1,14 @@
 package parser
 
 import (
+	"reflect"
+	"strings"
+
 	"github.com/pingcap/parser"
 	"github.com/pingcap/parser/ast"
 	"github.com/pingcap/tidb/types/parser_driver"
-	"reflect"
-	"sqlparser-go/lib/common"
-	"strings"
+
+	"github.com/romberli/sqlparser-go/lib/common"
 )
 
 type visitor struct {
