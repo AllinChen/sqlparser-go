@@ -1,7 +1,6 @@
 package parser
 
 import (
-	"fmt"
 	"reflect"
 	"strings"
 
@@ -203,8 +202,6 @@ func (p *Parser) Parse(sql string) (*Result, []error, error) {
 	}
 
 	for _, stmtNode := range stmtNodes {
-		text := stmtNode.Text()
-		fmt.Println(text)
 		stmtNode.Accept(p.Visitor)
 	}
 
