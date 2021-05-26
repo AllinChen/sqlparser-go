@@ -1,8 +1,9 @@
 package common
 
-func StringInSlice(str string, slice []string) bool {
-	for i := range slice {
-		if slice[i] == str {
+// StringInSlice checks if a string is in the slice
+func StringInSlice(s []string, str string) bool {
+	for i := range s {
+		if s[i] == str {
 			return true
 		}
 	}
@@ -10,7 +11,8 @@ func StringInSlice(str string, slice []string) bool {
 	return false
 }
 
-func StringInMap(str string, m map[string]string) bool {
+// StringKeyInMap checks if a string key is in the map
+func StringKeyInMap(m map[string]string, str string) bool {
 	if _, ok := m[str]; ok {
 		return true
 	}

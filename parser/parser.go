@@ -50,13 +50,13 @@ func NewVisitor() *Visitor {
 }
 
 func (v *Visitor) AddDB(dbName string) {
-	if !common.StringInSlice(dbName, v.Result.DBNames) {
+	if !common.StringInSlice(v.Result.DBNames, dbName) {
 		v.Result.DBNames = append(v.Result.DBNames, dbName)
 	}
 }
 
 func (v *Visitor) AddTable(tableName string) {
-	if !common.StringInSlice(tableName, v.Result.TableNames) {
+	if !common.StringInSlice(v.Result.TableNames, tableName) {
 		v.Result.TableNames = append(v.Result.TableNames, tableName)
 	}
 }
@@ -66,7 +66,7 @@ func (v *Visitor) AddTableComment(tableName string, tableComment string) {
 }
 
 func (v *Visitor) AddColumn(columnName string) {
-	if !common.StringInSlice(columnName, v.Result.ColumnNames) {
+	if !common.StringInSlice(v.Result.ColumnNames, columnName) {
 		v.Result.ColumnNames = append(v.Result.ColumnNames, columnName)
 	}
 }
@@ -87,7 +87,7 @@ func (v *Visitor) Enter(in ast.Node) (out ast.Node, skipChildren bool) {
 
 	astType := reflect.TypeOf(in).String()
 
-	if common.StringInSlice(astType, v.SQLList) {
+	if common.StringInSlice(v.SQLList, astType) {
 		v.ToParse = true
 		// 获取语句类型
 		v.Result.SQLType = strings.Split(astType, ".")[1]
