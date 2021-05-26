@@ -31,8 +31,7 @@ func main() {
 	// f.SQL = `insert into t01(col1, col2, col3) values(1, 1, 1, 1);`
 	// f.SQL = `select * from t01`
 
-	sql := f.SQL
-	result, warns, err := p.Parse(sql)
+	result, warns, err := p.Parse(f.SQL)
 	if err != nil {
 		fmt.Printf("parse error: %s", err.Error())
 		os.Exit(1)
