@@ -181,20 +181,20 @@ func (v *Visitor) Leave(in ast.Node) (out ast.Node, ok bool) {
 	return in, true
 }
 
-type SQLParser struct {
+type Parser struct {
 	Parser *parser.Parser
 }
 
-// NewSQLParser returns a new *SQLParser
-func NewSQLParser() *SQLParser {
-	return &SQLParser{parser.New()}
+// NewParser returns a new *Parser
+func NewParser() *Parser {
+	return &Parser{parser.New()}
 }
 
 // Parse parses sql and returns the result
-func (s *SQLParser) Parse(sql string) (*Result, []error, error) {
+func (p *Parser) Parse(sql string) (*Result, []error, error) {
 	v := NewVisitor()
 
-	stmtNodes, warns, err := s.Parser.Parse(sql, constant.EmptyString, constant.EmptyString)
+	stmtNodes, warns, err := p.Parser.Parse(sql, constant.EmptyString, constant.EmptyString)
 	if warns != nil || err != nil {
 		return nil, warns, err
 	}
