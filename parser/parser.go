@@ -211,6 +211,7 @@ func (p *Parser) Parse(sql string) (*Result, []error, error) {
 	return p.Visitor.Result, nil, nil
 }
 
+// Split splits multiple sqls into a slice
 func (p *Parser) Split(sqls string) ([]string, []error, error) {
 	var sqlList []string
 
