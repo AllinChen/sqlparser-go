@@ -13,18 +13,18 @@ func main() {
 	f.Init()
 	p := parser.NewParser()
 
-	f.SQL = `CREATE TABLE ` + "`t01`" + `(
-	id bigint(20) comment '主键ID',
-	col1 varchar(64) NOT NULL,
-	col2 varchar(64)  NOT NULL,
-	col3 varchar(64) NOT NULL,
-	col4 mediumtext,
-	col5 mediumtext,
-	created_at datetime(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
-	last_updated_at datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '最后更新时间',
-	PRIMARY KEY (id),
-	KEY idx_col1_col2_col3 (col1, col2, col3)
-	) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 ;`
+	// f.SQL = `CREATE TABLE ` + "`t01`" + `(
+	// id bigint(20) comment '主键ID',
+	// col1 varchar(64) NOT NULL,
+	// col2 varchar(64)  NOT NULL,
+	// col3 varchar(64) NOT NULL,
+	// col4 mediumtext,
+	// col5 mediumtext,
+	// created_at datetime(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
+	// last_updated_at datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '最后更新时间',
+	// PRIMARY KEY (id),
+	// KEY idx_col1_col2_col3 (col1, col2, col3)
+	// ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 ;`
 	// f.SQL = `select t02.*, id id_1 from db01.t01 inner join db02.t02 on t01.id=t02.id;`
 	// f.SQL = `alter table t01 change column col1 col2 int(10) comment 'ddd';`
 	// f.SQL = `alter table t01 comment 'ddd';`
