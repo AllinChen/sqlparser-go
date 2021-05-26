@@ -32,11 +32,11 @@ func TestParser_Parse(t *testing.T) {
 func TestParser_Split(t *testing.T) {
 	asst := assert.New(t)
 
-	sql := "select col1 from t01; select col2 from t02;"
+	sql := `select col1 from t01; select col2 from t02 where id in (select * from t03) and name = ";";select * from t04`
 	p := NewParser()
 
 	sqlList, warns, err := p.Split(sql)
 	asst.Nil(warns, "test Split() failed")
 	asst.Nil(err, "test Split() failed")
-	asst.Equal(2, len(sqlList))
+	asst.Equal(3, len(sqlList))
 }
