@@ -9,7 +9,7 @@ import (
 type MyFlag struct {
 	Help    bool
 	Version bool
-	Sql     string
+	SQL     string
 }
 
 func usage() {
@@ -33,7 +33,7 @@ func usage() {
 func (f *MyFlag) Init() {
 	flag.BoolVar(&f.Help, "help", false, "show help and exit")
 	flag.BoolVar(&f.Version, "version", false, "show version and exit")
-	flag.StringVar(&f.Sql, "sql", "", "input sql text")
+	flag.StringVar(&f.SQL, "sql", "", "input sql text")
 	flag.Parse()
 
 	flag.Usage = usage

@@ -7,25 +7,13 @@ import (
 	"github.com/pingcap/parser"
 	"github.com/pingcap/parser/ast"
 	"github.com/pingcap/tidb/types/parser_driver"
+	"github.com/romberli/go-util/constant"
 
 	"github.com/romberli/sqlparser-go/lib/common"
 )
 
-type visitor struct {
-	SqlType          string
-	toParse          bool
-	visitSqlList     []string
-	funcList         []string
-	DbList           []string
-	TableList        []string
-	TableCommentMap  map[string]string
-	ColumnList       []string
-	ColumnCommentMap map[string]string
-}
-
-func (v *visitor) Init() {
-	v.toParse = false
-	v.visitSqlList = []string{
+var (
+	DefaultSQLList = []string{
 		"*ast.CreateTableStmt",
 		"*ast.AlterTableStmt",
 		"*ast.DropTableStmt",
@@ -37,63 +25,75 @@ func (v *visitor) Init() {
 		"*ast.UpdateStmt",
 		"*ast.DeleteStmt",
 	}
-	v.funcList = []string{
+	DefaultFuncList = []string{
 		"*ast.FuncCallExpr",
 		"*ast.AggregateFuncExpr",
 		"*ast.WindowFuncExpr",
 	}
-	v.SqlType = ""
-	v.DbList = []string{}
-	v.TableList = []string{}
-	v.TableCommentMap = make(map[string]string)
-	v.ColumnList = []string{}
-	v.ColumnCommentMap = make(map[string]string)
+)
+
+type Visitor struct {
+	ToParse  bool
+	SQLList  []string
+	FuncList []string
+	Result   *Result
 }
 
-func (v *visitor) AddDb(dbName string) {
-	if !common.StringInSlice(dbName, v.DbList) {
-		v.DbList = append(v.DbList, dbName)
+func NewVisitor() *Visitor {
+	return &Visitor{
+		ToParse:  false,
+		SQLList:  DefaultSQLList,
+		FuncList: DefaultFuncList,
+		Result:   NewEmptyResult(),
 	}
 }
 
-func (v *visitor) AddTable(tableName string) {
-	if !common.StringInSlice(tableName, v.TableList) {
-		v.TableList = append(v.TableList, tableName)
+func (v *Visitor) AddDB(dbName string) {
+	if !common.StringInSlice(dbName, v.Result.DBNames) {
+		v.Result.DBNames = append(v.Result.DBNames, dbName)
 	}
 }
 
-func (v *visitor) AddTableComment(tableName string, tableComment string) {
-	v.TableCommentMap[tableName] = tableComment
-}
-
-func (v *visitor) AddColumn(columnName string) {
-	if !common.StringInSlice(columnName, v.ColumnList) {
-		v.ColumnList = append(v.ColumnList, columnName)
+func (v *Visitor) AddTable(tableName string) {
+	if !common.StringInSlice(tableName, v.Result.TableNames) {
+		v.Result.TableNames = append(v.Result.TableNames, tableName)
 	}
 }
 
-func (v *visitor) AddColumnComment(columnName string, columnComment string) {
-	v.ColumnCommentMap[columnName] = columnComment
+func (v *Visitor) AddTableComment(tableName string, tableComment string) {
+	v.Result.TableComments[tableName] = tableComment
 }
 
-func (v *visitor) Enter(in ast.Node) (out ast.Node, skipChildren bool) {
-	var funcArgs []ast.ExprNode
+func (v *Visitor) AddColumn(columnName string) {
+	if !common.StringInSlice(columnName, v.Result.ColumnNames) {
+		v.Result.ColumnNames = append(v.Result.ColumnNames, columnName)
+	}
+}
 
-	dbName := ""
-	tableName := ""
-	columnName := ""
-	tableComment := ""
-	columnComment := ""
+func (v *Visitor) AddColumnComment(columnName string, columnComment string) {
+	v.Result.ColumnComments[columnName] = columnComment
+}
+
+func (v *Visitor) Enter(in ast.Node) (out ast.Node, skipChildren bool) {
+	var (
+		funcArgs      []ast.ExprNode
+		dbName        string
+		tableName     string
+		columnName    string
+		tableComment  string
+		columnComment string
+	)
+
 	astType := reflect.TypeOf(in).String()
 
-	if common.StringInSlice(astType, v.visitSqlList) {
-		v.toParse = true
+	if common.StringInSlice(astType, v.SQLList) {
+		v.ToParse = true
 		// 获取语句类型
-		v.SqlType = strings.Split(astType, ".")[1]
+		v.Result.SQLType = strings.Split(astType, ".")[1]
 	}
 
-	if v.toParse {
-		//fmt.Println(astType)
+	if v.ToParse {
+		// fmt.Println(astType)
 
 		switch in.(type) {
 		case *ast.TableName:
@@ -103,7 +103,7 @@ func (v *visitor) Enter(in ast.Node) (out ast.Node, skipChildren bool) {
 			// 获取数据库名称
 			dbName = in.(*ast.TableName).Schema.L
 			if dbName != "" {
-				v.AddDb(dbName)
+				v.AddDB(dbName)
 			}
 		case *ast.CreateTableStmt:
 			// 获取表注释
@@ -177,26 +177,31 @@ func (v *visitor) Enter(in ast.Node) (out ast.Node, skipChildren bool) {
 	return in, false
 }
 
-func (v *visitor) Leave(in ast.Node) (out ast.Node, ok bool) {
+func (v *Visitor) Leave(in ast.Node) (out ast.Node, ok bool) {
 	return in, true
 }
 
-type SqlParser struct{}
+type SQLParser struct {
+	Parser *parser.Parser
+}
 
-//parse sql and return *visitor
-func (s *SqlParser) ParseSql(sqlText string) (vis *visitor, warns []error, err error) {
-	v := visitor{}
-	v.Init()
+// NewSQLParser returns a new *SQLParser
+func NewSQLParser() *SQLParser {
+	return &SQLParser{parser.New()}
+}
 
-	if stmtNodes, w, e := parser.New().Parse(sqlText, "", ""); w == nil && e == nil {
-		for _, stmtNode := range stmtNodes {
-			stmtNode.Accept(&v)
-			vis = &v
-		}
-	} else {
-		warns = w
-		err = e
+// Parse parses sql and returns the result
+func (s *SQLParser) Parse(sql string) (*Result, []error, error) {
+	v := NewVisitor()
+
+	stmtNodes, warns, err := s.Parser.Parse(sql, constant.EmptyString, constant.EmptyString)
+	if warns != nil || err != nil {
+		return nil, warns, err
 	}
 
-	return vis, warns, err
+	for _, stmtNode := range stmtNodes {
+		stmtNode.Accept(v)
+	}
+
+	return v.Result, nil, nil
 }
