@@ -1,6 +1,7 @@
 package parser
 
 import (
+	"fmt"
 	"reflect"
 	"strings"
 
@@ -182,26 +183,45 @@ func (v *Visitor) Leave(in ast.Node) (out ast.Node, ok bool) {
 }
 
 type Parser struct {
-	Parser *parser.Parser
+	Parser  *parser.Parser
+	Visitor *Visitor
 }
 
 // NewParser returns a new *Parser
 func NewParser() *Parser {
-	return &Parser{parser.New()}
+	return &Parser{
+		Parser:  parser.New(),
+		Visitor: NewVisitor(),
+	}
 }
 
 // Parse parses sql and returns the result
 func (p *Parser) Parse(sql string) (*Result, []error, error) {
-	v := NewVisitor()
-
 	stmtNodes, warns, err := p.Parser.Parse(sql, constant.EmptyString, constant.EmptyString)
 	if warns != nil || err != nil {
 		return nil, warns, err
 	}
 
 	for _, stmtNode := range stmtNodes {
-		stmtNode.Accept(v)
+		text := stmtNode.Text()
+		fmt.Println(text)
+		stmtNode.Accept(p.Visitor)
 	}
 
-	return v.Result, nil, nil
+	return p.Visitor.Result, nil, nil
+}
+
+func (p *Parser) Split(sqls string) ([]string, []error, error) {
+	var sqlList []string
+
+	stmtNodes, warns, err := p.Parser.Parse(sqls, constant.EmptyString, constant.EmptyString)
+	if warns != nil || err != nil {
+		return nil, warns, err
+	}
+
+	for _, stmtNode := range stmtNodes {
+		sqlList = append(sqlList, stmtNode.Text())
+	}
+
+	return sqlList, nil, nil
 }
