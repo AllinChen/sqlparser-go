@@ -33,19 +33,19 @@ func main() {
 
 	result, warns, err := p.Parse(f.SQL)
 	if err != nil {
-		fmt.Printf("parse error: %s", err.Error())
+		fmt.Printf("parse error:\n%s", err.Error())
 		os.Exit(1)
 	}
 	if warns != nil {
 		for _, warn := range warns {
-			fmt.Printf("parse warn: %s", warn.Error())
+			fmt.Println(fmt.Sprintf("parse warn:\n%s", warn.Error()))
 		}
 		os.Exit(1)
 	}
 
 	jsonBytes, err := result.Marshal()
 	if err != nil {
-		fmt.Printf("marshal error: \n%s", err.Error())
+		fmt.Printf("marshal error:\n%s", err.Error())
 		os.Exit(1)
 	}
 
