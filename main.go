@@ -31,9 +31,16 @@ func main() {
 	// f.SQL = `insert into t01(col1, col2, col3) values(1, 1, 1, 1);`
 	// f.SQL = `select * from t01`
 
-	result, warns, err := p.Parse(f.SQL)
-	if warns != nil || err != nil {
-		fmt.Printf("parse warn: %v\nparse error: %v\n", warns, err)
+	sql := f.SQL
+	result, warns, err := p.Parse(sql)
+	if err != nil {
+		fmt.Printf("parse error: %s", err.Error())
+		os.Exit(1)
+	}
+	if warns != nil {
+		for _, warn := range warns {
+			fmt.Printf("parse warn: %s", warn.Error())
+		}
 		os.Exit(1)
 	}
 
