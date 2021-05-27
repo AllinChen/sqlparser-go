@@ -6,7 +6,7 @@ import (
 
 	"github.com/pingcap/parser"
 	"github.com/pingcap/parser/ast"
-	"github.com/pingcap/tidb/types/parser_driver"
+	driver "github.com/pingcap/tidb/types/parser_driver"
 	"github.com/romberli/go-util/constant"
 
 	"github.com/romberli/sqlparser-go/lib/common"

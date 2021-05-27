@@ -13,6 +13,7 @@ type Result struct {
 	TableComments  map[string]string `json:"table_comments"`
 	ColumnNames    []string          `json:"column_names"`
 	ColumnComments map[string]string `json:"column_comments"`
+	Tp             []int
 }
 
 // NewResult returns a new *Result

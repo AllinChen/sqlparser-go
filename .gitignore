@@ -17,3 +17,5 @@
 */*.log
 *.log
 /bin/
+*.vscode
+*.json
